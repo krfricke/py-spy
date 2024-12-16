@@ -316,18 +316,22 @@ impl PythonSpy {
             // Python 3.11+'s native thread ID is not always updated. In that case, also re-fetch
             // the native thread ID from the OS.
             if trace.os_thread_id.is_none() || self.config.native {
+                warn!("DBG Getting OS thread ID for thread {}", python_thread_id);
                 let mut os_thread_id = self._get_os_thread_id(python_thread_id, &interp)?;
 
                 // linux can see issues where pthread_ids get recycled for new OS threads,
                 // which totally breaks the caching we were doing here. Detect this and retry
                 if let Some(tid) = os_thread_id {
                     if !thread_activity.is_empty() && !thread_activity.contains_key(&tid) {
+                        warn!("DBG clearing tid {}", tid);
                         info!("clearing away thread id caches, thread {} has exited", tid);
                         self.python_thread_ids.clear();
                         self.python_thread_names.clear();
                         os_thread_id = self._get_os_thread_id(python_thread_id, &interp)?;
                     }
                 }
+
+                warn!("DBG got got {:?}", os_thread_id);
 
                 trace.os_thread_id = os_thread_id.map(|id| id as u64);
             }
@@ -513,6 +517,7 @@ impl PythonSpy {
 
             match self._get_pthread_id(&unwinder, thread, &all_python_threads) {
                 Ok(pthread_id) => {
+                    warn!("DBG got a pthread ID {:?} {:?}", pthread_id, threadid);
                     if pthread_id != 0 {
                         self.python_thread_ids.insert(pthread_id, threadid);
                     }
@@ -569,7 +574,9 @@ impl PythonSpy {
             let thread_reg = cursor.r5();
             #[cfg(target_arch = "aarch64")]
             let thread_reg = cursor.r5();
+            warn!("DBG thread_reg {:?}", thread_reg);
             if let Ok(thread_id) = thread_reg {
+                warn!("DBG thread_id {:?} and threadids {:?}", thread_id, threadids);
                 if thread_id != 0 && threadids.contains(&thread_id) {
                     pthread_id = thread_id;
                 }
