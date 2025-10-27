@@ -54,7 +54,7 @@ pub fn copy_bytes<T: BytesObject, P: ProcessMemory>(
 ) -> Result<Vec<u8>, Error> {
     let obj = process.copy_pointer(ptr)?;
     let size = obj.size();
-    if size >= 65536 {
+    if size >= 10000000 {
         return Err(format_err!("Refusing to copy {} bytes", size));
     }
     Ok(process.copy(obj.address(ptr as usize), size as usize)?)
